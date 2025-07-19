@@ -1,5 +1,3 @@
-import os
-import json
 import asyncio
 import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -8,28 +6,28 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 # === KONFIGURASI BOT BERJENJANG ===
 BOTS_CONFIG = [
     {
-        "BOT1_TOKEN": "7502172892:AAGxZr5cR3unmV92HYu5FXMvuXVFx_xSlBI",
+        "token": "7502172892:AAGxZr5cR3unmV92HYu5FXMvuXVFx_xSlBI",
         "name": "@NakalAccess_Bot",
         "next_bot": "@GacorAccess_Bot",
         "group": "@InfoFreebet4D",
         "channels": ["@bola_pelangi", "@studionakal18"]
     },
     {
-        "BOT2_TOKEN": "7867189011:AAFo0MoSs_YIcteplSP13Nw1dM_Fb04WZTU",
+        "token": "7867189011:AAFo0MoSs_YIcteplSP13Nw1dM_Fb04WZTU",
         "name": "@GacorAccess_Bot",
         "next_bot": "@Koloni4DNakal_Bot",
         "group": "@SITUSLINKGACOR4D",
         "channels": ["@bolapelangi2ofc", "@studionakal18"]
     },
     {
-        "BOT3_TOKEN": "8104298639:AAGv8wMQmPwIEQAnC5h09BSUJyCjl14bg3Q",
+        "token": "8104298639:AAGv8wMQmPwIEQAnC5h09BSUJyCjl14bg3Q",
         "name": "@Koloni4DNakal_Bot",
         "next_bot": "@SingaNakal_Bot",
         "group": "@GrupStudioNakal",
         "channels": ["@koloni4d_official1", "@studionakal18"]
     },
     {
-        "BOT4_TOKEN": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
+        "token": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
         "name": "@SingaNakal_Bot",
         "next_bot": "@FinalNakal_Bot",
         "group": "@GrupStudioNakal",
@@ -37,24 +35,24 @@ BOTS_CONFIG = [
     }
 ]
 
-# === CEK MEMBER DAN KIRIM TOMBOL LANJUT ===
+# === CEK MEMBER DAN LANJUT ===
 async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, config, video_id="", is_callback=False):
     user = update.effective_user
     user_id = user.id
 
     try:
         # Cek grup
-        member_group = await context.bot.get_chat_member(config["group"], user_id)
-        if member_group.status not in ("member", "administrator", "creator"):
+        group_member = await context.bot.get_chat_member(config["group"], user_id)
+        if group_member.status not in ("member", "administrator", "creator"):
             raise Exception("Belum join grup")
 
         # Cek semua channel
         for ch in config["channels"]:
-            member_channel = await context.bot.get_chat_member(ch, user_id)
-            if member_channel.status not in ("member", "administrator", "creator"):
+            ch_member = await context.bot.get_chat_member(ch, user_id)
+            if ch_member.status not in ("member", "administrator", "creator"):
                 raise Exception("Belum join channel")
 
-        # Sudah join semua → lanjut ke bot berikutnya
+        # Lanjut ke bot berikutnya
         next_url = f"https://t.me/{config['next_bot'][1:]}?start={video_id}"
         await context.bot.send_message(
             chat_id=user_id,
@@ -64,41 +62,40 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
             ])
         )
     except Exception:
-        # Belum join → kirim ulang tombol join
-        join_buttons = [[InlineKeyboardButton("📥 Join Grup", url=f"https://t.me/{config['group'][1:]}")]]
+        # Belum join → tampilkan ulang tombol join
+        buttons = [[InlineKeyboardButton("📥 Join Grup", url=f"https://t.me/{config['group'][1:]}")]]
         for ch in config["channels"]:
-            join_buttons.append([InlineKeyboardButton("📥 Join Channel", url=f"https://t.me/{ch[1:]}")])
-        join_buttons.append([InlineKeyboardButton("🔁 Coba Lagi", callback_data=f"check_again_{video_id}")])
+            buttons.append([InlineKeyboardButton("📥 Join Channel", url=f"https://t.me/{ch[1:]}")])
+        buttons.append([InlineKeyboardButton("🔁 Coba Lagi", callback_data=f"check_again_{video_id}")])
 
         await context.bot.send_message(
             chat_id=user_id,
-            text="❗ Kamu harus join semua grup dan channel berikut sebelum lanjut:",
-            reply_markup=InlineKeyboardMarkup(join_buttons)
+            text="❗ Kamu harus join semua grup dan channel ini dulu:",
+            reply_markup=InlineKeyboardMarkup(buttons)
         )
 
-# === HANDLER /start ===
+# === /start handler ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, config):
     video_id = context.args[0] if context.args else ""
     await check_membership_and_reply(update, context, config, video_id)
 
-# === HANDLER CALLBACK ===
+# === callback query handler ===
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, config):
     query = update.callback_query
     await query.answer()
-
     if query.data.startswith("check_again_"):
-        video_id = query.data.replace("check_again_", "", 1)
+        video_id = query.data.replace("check_again_", "")
         await check_membership_and_reply(update, context, config, video_id, is_callback=True)
 
-# === JALANKAN SETIAP BOT DALAM THREAD ===
+# === Jalankan bot tunggal ===
 def run_bot(config):
-    app = ApplicationBuilder().token(config["BOT1_TOKEN,BOT2_TOKEN,BOT3_TOKEN,BOT4_TOKEN"]).build()
+    app = ApplicationBuilder().token(config["token"]).build()
     app.add_handler(CommandHandler("start", lambda u, c: start(u, c, config)))
     app.add_handler(CallbackQueryHandler(lambda u, c: callback_handler(u, c, config), pattern="^check_again_"))
-    print(f"🚀 {config['name']} aktif...")
+    print(f"✅ {config['name']} aktif.")
     app.run_polling()
 
-# === MAIN STARTUP UNTUK SEMUA BOT ===
+# === Main untuk semua bot ===
 async def main():
     threads = []
     for config in BOTS_CONFIG:
@@ -107,7 +104,7 @@ async def main():
         threads.append(t)
 
     while True:
-        await asyncio.sleep(10)  # Jaga tetap hidup di Railway
+        await asyncio.sleep(10)  # Keep alive on Railway
 
 if __name__ == "__main__":
     asyncio.run(main())
