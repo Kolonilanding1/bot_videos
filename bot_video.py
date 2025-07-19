@@ -92,7 +92,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, c
 
 # === JALANKAN SETIAP BOT DALAM THREAD ===
 def run_bot(config):
-    app = ApplicationBuilder().token(config["token"]).build()
+    app = ApplicationBuilder().token(config["BOT1_TOKEN,BOT2_TOKEN,BOT3_TOKEN,BOT4_TOKEN"]).build()
     app.add_handler(CommandHandler("start", lambda u, c: start(u, c, config)))
     app.add_handler(CallbackQueryHandler(lambda u, c: callback_handler(u, c, config), pattern="^check_again_"))
     print(f"🚀 {config['name']} aktif...")
