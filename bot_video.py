@@ -11,7 +11,7 @@ from telegram.ext import (
 # === KONFIGURASI BOT BERJENJANG ===
 BOTS_CONFIG = [
     {
-        "token": "7502172892:AAGxZr5cR3unmV92HYu5FXMvuXVFx_xSlBI",
+        "token": ":AAGxZr5cR3unmV92HYu5FXMvuXVFx_xSlBI",
         "name": "@NakalAccess_Bot",
         "next_bot": "@GacorAccess_Bot",
         "group": "@InfoFreebet4D",
