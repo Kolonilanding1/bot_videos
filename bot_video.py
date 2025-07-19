@@ -1,7 +1,12 @@
 import asyncio
-import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    Application
+)
 
 # === KONFIGURASI BOT BERJENJANG ===
 BOTS_CONFIG = [
@@ -46,7 +51,7 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
         if group_member.status not in ("member", "administrator", "creator"):
             raise Exception("Belum join grup")
 
-        # Cek semua channel
+        # Cek channel
         for ch in config["channels"]:
             ch_member = await context.bot.get_chat_member(ch, user_id)
             if ch_member.status not in ("member", "administrator", "creator"):
@@ -62,7 +67,7 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
             ])
         )
     except Exception:
-        # Belum join → tampilkan ulang tombol join
+        # Belum join semua
         buttons = [[InlineKeyboardButton("📥 Join Grup", url=f"https://t.me/{config['group'][1:]}")]]
         for ch in config["channels"]:
             buttons.append([InlineKeyboardButton("📥 Join Channel", url=f"https://t.me/{ch[1:]}")])
@@ -74,12 +79,12 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
-# === /start handler ===
+# === /start ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE, config):
     video_id = context.args[0] if context.args else ""
     await check_membership_and_reply(update, context, config, video_id)
 
-# === callback query handler ===
+# === Callback tombol ulang ===
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, config):
     query = update.callback_query
     await query.answer()
@@ -87,24 +92,22 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, c
         video_id = query.data.replace("check_again_", "")
         await check_membership_and_reply(update, context, config, video_id, is_callback=True)
 
-# === Jalankan bot tunggal ===
-def run_bot(config):
+# === Build & Jalankan Bot ===
+async def run_bot(config):
     app = ApplicationBuilder().token(config["token"]).build()
     app.add_handler(CommandHandler("start", lambda u, c: start(u, c, config)))
     app.add_handler(CallbackQueryHandler(lambda u, c: callback_handler(u, c, config), pattern="^check_again_"))
     print(f"✅ {config['name']} aktif.")
-    app.run_polling()
+    await app.initialize()
+    await app.start()
+    return app
 
-# === Main untuk semua bot ===
+# === Main Async Loop untuk Semua Bot ===
 async def main():
-    threads = []
-    for config in BOTS_CONFIG:
-        t = threading.Thread(target=run_bot, args=(config,), daemon=True)
-        t.start()
-        threads.append(t)
-
-    while True:
-        await asyncio.sleep(10)  # Keep alive on Railway
+    apps = await asyncio.gather(*(run_bot(cfg) for cfg in BOTS_CONFIG))
+    print("Semua bot aktif. Menunggu polling...")
+    await asyncio.gather(*(app.updater.start_polling() for app in apps))
+    await asyncio.Event().wait()  # Biar tetap jalan di Railway
 
 if __name__ == "__main__":
     asyncio.run(main())
