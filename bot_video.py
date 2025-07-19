@@ -29,7 +29,7 @@ BOTS_CONFIG = [
         "channels": ["@koloni4d_official1", "@studionakal18"]
     },
     {
-        "BOT3_TOKEN": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
+        "BOT4_TOKEN": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
         "name": "@SingaNakalBot",
         "next_bot": "@FinalNakalBot",
         "group": "@GrupStudioNakal",
