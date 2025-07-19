@@ -1,1 +1,1 @@
-worker: python bot_videos.py
+worker: python bot_video.py
