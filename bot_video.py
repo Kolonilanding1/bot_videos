@@ -9,29 +9,29 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 BOTS_CONFIG = [
     {
         "BOT1_TOKEN": "7502172892:AAGxZr5cR3unmV92HYu5FXMvuXVFx_xSlBI",
-        "name": "@NakalAccessBot",
-        "next_bot": "@GacorAccessBot",
+        "name": "@NakalAccess_Bot",
+        "next_bot": "@GacorAccess_Bot",
         "group": "@InfoFreebet4D",
         "channels": ["@bola_pelangi", "@studionakal18"]
     },
     {
         "BOT2_TOKEN": "7867189011:AAFo0MoSs_YIcteplSP13Nw1dM_Fb04WZTU",
-        "name": "@GacorAccessBot",
-        "next_bot": "@Koloni4DNakalBot",
+        "name": "@GacorAccess_Bot",
+        "next_bot": "@Koloni4DNakal_Bot",
         "group": "@SITUSLINKGACOR4D",
         "channels": ["@bolapelangi2ofc", "@studionakal18"]
     },
     {
         "BOT3_TOKEN": "8104298639:AAGv8wMQmPwIEQAnC5h09BSUJyCjl14bg3Q",
-        "name": "@Koloni4DNakalBot",
-        "next_bot": "@SingaNakalBot",
+        "name": "@Koloni4DNakal_Bot",
+        "next_bot": "@SingaNakal_Bot",
         "group": "@GrupStudioNakal",
         "channels": ["@koloni4d_official1", "@studionakal18"]
     },
     {
         "BOT4_TOKEN": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
-        "name": "@SingaNakalBot",
-        "next_bot": "@FinalNakalBot",
+        "name": "@SingaNakal_Bot",
+        "next_bot": "@FinalNakal_Bot",
         "group": "@GrupStudioNakal",
         "channels": ["@Infosingaslot", "@studionakal18"]
     }
