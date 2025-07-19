@@ -1,11 +1,11 @@
 import asyncio
+import aiohttp
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
-    Application
 )
 
 # === KONFIGURASI BOT BERJENJANG ===
@@ -39,6 +39,27 @@ BOTS_CONFIG = [
         "channels": ["@Infosingaslot", "@studionakal18"]
     }
 ]
+
+# Dummy: Simulasi user count untuk masing-masing bot
+# Nanti ini bisa diganti dengan data nyata, misal dari database atau cache
+user_counts = {
+    "@NakalAccess_Bot": 6325,
+    "@GacorAccess_Bot": 4780,
+    "@Koloni4DNakal_Bot": 3870,
+    "@SingaNakal_Bot": 2560,
+}
+
+# Fungsi untuk update nama bot via API Telegram (setMyName)
+async def update_bot_name(token, display_name):
+    url = f"https://api.telegram.org/bot{token}/setMyName"
+    data = {"name": display_name}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=data) as resp:
+            res_json = await resp.json()
+            if not res_json.get("ok"):
+                print(f"❌ Gagal update nama bot: {res_json}")
+            else:
+                print(f"✅ Nama bot berhasil diupdate ke:\n{display_name}")
 
 # === CEK MEMBER DAN LANJUT ===
 async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, config, video_id="", is_callback=False):
@@ -92,6 +113,24 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, c
         video_id = query.data.replace("check_again_", "")
         await check_membership_and_reply(update, context, config, video_id, is_callback=True)
 
+# Background task yang berjalan terus untuk update nama bot setiap 10 menit
+async def background_update_bot_name(app, config):
+    token = config["token"]
+    bot_name = config["name"]
+    bot_username = config["name"]  # Misal pakai ini sebagai key untuk user_counts
+
+    while True:
+        # Dapatkan jumlah user untuk bot ini (dummy)
+        count = user_counts.get(bot_username, 0)
+        # Format nama bot dengan dua baris
+        display_name = f"{bot_name}\n{count} pengguna"
+
+        # Panggil API update nama bot
+        await update_bot_name(token, display_name)
+
+        # Tunggu 10 menit sebelum update lagi
+        await asyncio.sleep(600)  # 600 detik = 10 menit
+
 # === Build & Jalankan Bot ===
 async def run_bot(config):
     app = ApplicationBuilder().token(config["token"]).build()
@@ -100,12 +139,18 @@ async def run_bot(config):
     print(f"✅ {config['name']} aktif.")
     await app.initialize()
     await app.start()
+
+    # Start background task untuk update nama bot
+    app.job = asyncio.create_task(background_update_bot_name(app, config))
+
     return app
 
 # === Main Async Loop untuk Semua Bot ===
 async def main():
     apps = await asyncio.gather(*(run_bot(cfg) for cfg in BOTS_CONFIG))
     print("Semua bot aktif. Menunggu polling...")
+
+    # Mulai polling semua bot
     await asyncio.gather(*(app.updater.start_polling() for app in apps))
     await asyncio.Event().wait()  # Biar tetap jalan di Railway
 
