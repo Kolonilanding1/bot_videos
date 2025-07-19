@@ -12,28 +12,28 @@ BOTS_CONFIG = [
         "name": "@NakalAccessBot",
         "next_bot": "@GacorAccessBot",
         "group": "@InfoFreebet4D",
-        "channels": ["@bola_pelangi", "studionakal18"]
+        "channels": ["@bola_pelangi", "@studionakal18"]
     },
     {
         "BOT2_TOKEN": "7867189011:AAFo0MoSs_YIcteplSP13Nw1dM_Fb04WZTU",
         "name": "@GacorAccessBot",
         "next_bot": "@Koloni4DNakalBot",
         "group": "@SITUSLINKGACOR4D",
-        "channels": ["@bolapelangi2ofc", "studionakal18"]
+        "channels": ["@bolapelangi2ofc", "@studionakal18"]
     },
     {
         "BOT3_TOKEN": "8104298639:AAGv8wMQmPwIEQAnC5h09BSUJyCjl14bg3Q",
         "name": "@Koloni4DNakalBot",
         "next_bot": "@SingaNakalBot",
         "group": "@GrupStudioNakal",
-        "channels": ["@koloni4d_official1", "studionakal18"]
+        "channels": ["@koloni4d_official1", "@studionakal18"]
     },
     {
         "BOT3_TOKEN": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
         "name": "@SingaNakalBot",
         "next_bot": "@FinalNakalBot",
         "group": "@GrupStudioNakal",
-        "channels": ["@Infosingaslot", "studionakal18"]
+        "channels": ["@Infosingaslot", "@studionakal18"]
     }
 ]
 
