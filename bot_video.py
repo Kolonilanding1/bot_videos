@@ -50,18 +50,6 @@ def load_videos():
     with open(VIDEOS_JSON_PATH, "r") as f:
         return json.load(f)
 
-# ====== Fungsi update nama bot (opsional) ======
-async def update_bot_name(token, display_name):
-    url = f"https://api.telegram.org/bot{token}/setMyName"
-    data = {"name": display_name}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, data=data) as resp:
-            res_json = await resp.json()
-            if not res_json.get("ok"):
-                print(f"❌ Gagal update nama bot: {res_json}")
-            else:
-                print(f"✅ Nama bot berhasil diupdate ke: {display_name}")
-
 # ====== Bot 1-4: cek membership dan tombol lanjut ======
 async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, config, video_id="", is_callback=False):
     user = update.effective_user
@@ -121,7 +109,7 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=video["thumbnail"],
             caption=f"🎬 <b>{video['title']}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]]),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]])
         )
     else:
         await context.bot.send_message(
@@ -135,27 +123,33 @@ async def run_bot(config):
     app.add_handler(CommandHandler("start", lambda u, c: start_bot(u, c, config)))
     app.add_handler(CallbackQueryHandler(lambda u, c: callback_handler_bot(u, c, config), pattern="^check_again_"))
     print(f"✅ {config['name']} aktif.")
-    await app.initialize()
-    await app.start()
     return app
 
 # ====== Fungsi menjalankan bot terakhir (BOT 5) ======
 async def run_last_bot():
     app = ApplicationBuilder().token(TOKEN_LAST_BOT).build()
     app.add_handler(CommandHandler("start", start_last_bot))
-    print(f"✅ Bot terakhir aktif.")
-    await app.initialize()
-    await app.start()
+    print("✅ Bot terakhir aktif.")
     return app
 
-# ====== Main async jalankan semua bot ======
+# ====== Main async jalankan semua bot dengan polling ======
 async def main():
-    bots = await asyncio.gather(*(run_bot(cfg) for cfg in BOTS_CONFIG))
-    last_bot = await run_last_bot()
-    print("Semua bot aktif. Menunggu polling...")
-    await asyncio.gather(*(bot.run_polling() for bot in bots), last_bot.run_polling())
-    await asyncio.Event().wait()
+    all_apps = []
+    for config in BOTS_CONFIG:
+        bot_app = await run_bot(config)
+        all_apps.append(bot_app)
 
+    last_bot_app = await run_last_bot()
+    all_apps.append(last_bot_app)
+
+    async def start_polling(app):
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling()
+        print("📡 Polling berjalan untuk:", app.bot.username)
+
+    await asyncio.gather(*(start_polling(app) for app in all_apps))
+    await asyncio.Event().wait()  # agar tidak langsung exit
 
 if __name__ == "__main__":
     asyncio.run(main())
