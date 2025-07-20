@@ -44,23 +44,14 @@ BOTS_CONFIG = [
 
 # ====== KONFIGURASI BOT TERAKHIR (BOT 5) ======
 TOKEN_LAST_BOT = "7368142853:AAHNyDF5WMub4gH50v3uuwoGfi5q-3N1Wlo"
-VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada di folder yang sama
+VIDEOS_JSON_PATH = "videos.json"
 
 def load_videos():
-    with open(VIDEOS_JSON_PATH, "r") as f:
-        return json.load(f)
-
-# ====== Fungsi update nama bot (opsional) ======
-async def update_bot_name(token, display_name):
-    url = f"https://api.telegram.org/bot{token}/setMyName"
-    data = {"name": display_name}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, data=data) as resp:
-            res_json = await resp.json()
-            if not res_json.get("ok"):
-                print(f"❌ Gagal update nama bot: {res_json}")
-            else:
-                print(f"✅ Nama bot berhasil diupdate ke: {display_name}")
+    try:
+        with open(VIDEOS_JSON_PATH, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
 # ====== Bot 1-4: cek membership dan tombol lanjut ======
 async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, config, video_id="", is_callback=False):
@@ -72,13 +63,13 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
         if group_member.status not in ("member", "administrator", "creator"):
             raise Exception("Belum join grup")
 
-        # Cek channel satu-satu
+        # Cek channel
         for ch in config["channels"]:
             ch_member = await context.bot.get_chat_member(ch, user_id)
             if ch_member.status not in ("member", "administrator", "creator"):
                 raise Exception("Belum join channel")
 
-        # Jika sudah join semua lanjut ke bot berikutnya
+        # Lanjut ke bot berikutnya
         next_url = f"https://t.me/{config['next_bot'][1:]}?start={video_id}"
         await context.bot.send_message(
             chat_id=user_id,
@@ -86,12 +77,10 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Lanjut ➡️", url=next_url)]])
         )
     except Exception:
-        # Jika belum join semua, kirim tombol join dan coba lagi
         buttons = [[InlineKeyboardButton("📥 Join Grup", url=f"https://t.me/{config['group'][1:]}")]]
         for ch in config["channels"]:
             buttons.append([InlineKeyboardButton("📥 Join Channel", url=f"https://t.me/{ch[1:]}")])
         buttons.append([InlineKeyboardButton("🔁 Coba Lagi", callback_data=f"check_again_{video_id}")])
-
         await context.bot.send_message(
             chat_id=user_id,
             text="❗ Kamu harus join semua grup dan channel ini dulu:",
@@ -109,7 +98,7 @@ async def callback_handler_bot(update: Update, context: ContextTypes.DEFAULT_TYP
         video_id = query.data.replace("check_again_", "")
         await check_membership_and_reply(update, context, config, video_id, is_callback=True)
 
-# ====== Bot terakhir: kirim foto + link video ======
+# ====== Bot terakhir: tampilkan video ======
 async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     video_id = context.args[0] if context.args else ""
@@ -121,7 +110,9 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=video["thumbnail"],
             caption=f"🎬 <b>{video['title']}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]]),
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]
+            ])
         )
     else:
         await context.bot.send_message(
@@ -129,31 +120,30 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="❌ Video tidak ditemukan atau ID tidak valid."
         )
 
-# ====== Fungsi untuk menjalankan 1 bot (BOT 1-4) ======
+# ====== Jalankan Bot 1–4 ======
 async def run_bot(config):
     app = ApplicationBuilder().token(config["token"]).build()
     app.add_handler(CommandHandler("start", lambda u, c: start_bot(u, c, config)))
     app.add_handler(CallbackQueryHandler(lambda u, c: callback_handler_bot(u, c, config), pattern="^check_again_"))
-    print(f"✅ {config['name']} aktif.")
     await app.initialize()
     await app.start()
+    print(f"✅ Bot {config['name']} aktif.")
     return app
 
-# ====== Fungsi menjalankan bot terakhir (BOT 5) ======
+# ====== Jalankan Bot 5 ======
 async def run_last_bot():
     app = ApplicationBuilder().token(TOKEN_LAST_BOT).build()
     app.add_handler(CommandHandler("start", start_last_bot))
-    print(f"✅ Bot terakhir aktif.")
     await app.initialize()
     await app.start()
+    print("✅ Bot terakhir aktif.")
     return app
 
-# ====== Main async jalankan semua bot ======
+# ====== Main Async Runner ======
 async def main():
     bots = await asyncio.gather(*(run_bot(cfg) for cfg in BOTS_CONFIG))
     last_bot = await run_last_bot()
-    print("Semua bot aktif. Menunggu polling...")
-    await asyncio.gather(*(bot.updater.start_polling() for bot in bots), last_bot.updater.start_polling())
+    print("🚀 Semua bot sedang berjalan...")
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
