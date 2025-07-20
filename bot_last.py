@@ -1,8 +1,9 @@
+import os
 import json
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = "7368142853:AAHNyDF5WMub4gH50v3uuwoGfi5q-3N1Wlo"
+TOKEN = os.getenv("TOKEN")
 
 def load_videos():
     with open("videos.json", "r") as f:
@@ -20,15 +21,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=video["thumbnail"],
             caption=f"🎬 <b>{video['title']}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])
-            ]])
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]])
         )
     else:
-        await context.bot.send_message(
-            chat_id=user.id,
-            text="❌ Video tidak ditemukan atau ID tidak valid."
-        )
+        await context.bot.send_message(chat_id=user.id, text="❌ Video tidak ditemukan atau ID tidak valid.")
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()
