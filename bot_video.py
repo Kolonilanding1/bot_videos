@@ -117,6 +117,44 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=user.id,
             text="❌ Video tidak ditemukan atau ID tidak valid."
         )
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Bot is alive!")
+
+    def do_HEAD(self):
+        # Kirim response header yang sama seperti do_GET, tanpa body
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+        else:
+            self.send_response(200)
+            self.end_headers()
+
+
+def start_ping_server():
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+# Jalankan server HTTP di thread terpisah
+threading.Thread(target=start_ping_server, daemon=True).start()
+
+def log_activity(user_id, username, action):
+    try:
+        with open("userlist.txt", "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now()} | {user_id} | {username} | {action}\n")
+    except Exception as e:
+        logging.error(f"Failed to write log: {e}")
 
 # ====== Fungsi untuk menjalankan 1 bot (BOT 1-4) ======
 async def run_bot(config):
