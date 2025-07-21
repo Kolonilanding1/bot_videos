@@ -1,4 +1,5 @@
 import os
+import json
 import asyncio
 import logging
 import threading
@@ -6,15 +7,16 @@ from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import pytz
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
-from telegram.error import BadRequest
 from telegram.ext import (
     Application,
+    ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
 )
+
 # ====== KONFIGURASI BOT BERJENJANG (BOT 1-4) ======
 BOTS_CONFIG = [
     {
@@ -47,10 +49,9 @@ BOTS_CONFIG = [
     }
 ]
 
-
 # ====== KONFIGURASI BOT TERAKHIR (BOT 5) ======
 TOKEN_LAST_BOT = os.getenv("LAST_BOT_TOKEN")
-VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada di folder yang sama
+VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada
 
 def load_videos():
     with open(VIDEOS_JSON_PATH, "r") as f:
@@ -61,18 +62,14 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
     user = update.effective_user
     user_id = user.id
     try:
-        # Cek grup
         group_member = await context.bot.get_chat_member(config["group"], user_id)
         if group_member.status not in ("member", "administrator", "creator"):
             raise Exception("Belum join grup")
-
-        # Cek channel satu-satu
         for ch in config["channels"]:
             ch_member = await context.bot.get_chat_member(ch, user_id)
             if ch_member.status not in ("member", "administrator", "creator"):
                 raise Exception("Belum join channel")
 
-        # Jika sudah join semua lanjut ke bot berikutnya
         next_url = f"https://t.me/{config['next_bot'][1:]}?start={video_id}"
         await context.bot.send_message(
             chat_id=user_id,
@@ -80,7 +77,6 @@ async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAU
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Lanjut ➡️", url=next_url)]])
         )
     except Exception:
-        # Jika belum join semua, kirim tombol join dan coba lagi
         buttons = [[InlineKeyboardButton("📥 Join Grup", url=f"https://t.me/{config['group'][1:]}")]]
         for ch in config["channels"]:
             buttons.append([InlineKeyboardButton("📥 Join Channel", url=f"https://t.me/{ch[1:]}")])
@@ -115,7 +111,7 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=video["thumbnail"],
             caption=f"🎬 <b>{video['title']}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]])
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]]),
         )
     else:
         await context.bot.send_message(
@@ -123,7 +119,40 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="❌ Video tidak ditemukan atau ID tidak valid."
         )
 
-# ====== Fungsi untuk menjalankan 1 bot (BOT 1-4) ======
+# ====== Fungsi logging user ke file ======
+def log_activity(user_id, username, action):
+    try:
+        with open("userlist.txt", "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now()} | {user_id} | {username} | {action}\n")
+    except Exception as e:
+        logging.error(f"Failed to write log: {e}")
+
+# ====== HTTP healthcheck server ======
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Bot is alive!")
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
+def start_ping_server():
+    port = int(os.environ.get('PORT', 8080))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
+
+# Mulai thread healthcheck
+threading.Thread(target=start_ping_server, daemon=True).start()
+
+# ====== Fungsi jalankan bot ======
 async def run_bot(config):
     app = ApplicationBuilder().token(config["token"]).build()
     app.add_handler(CommandHandler("start", lambda u, c: start_bot(u, c, config)))
@@ -131,31 +160,31 @@ async def run_bot(config):
     print(f"✅ {config['name']} aktif.")
     return app
 
-# ====== Fungsi menjalankan bot terakhir (BOT 5) ======
 async def run_last_bot():
     app = ApplicationBuilder().token(TOKEN_LAST_BOT).build()
     app.add_handler(CommandHandler("start", start_last_bot))
     print("✅ Bot terakhir aktif.")
     return app
 
-# ====== Main async jalankan semua bot dengan polling ======
+# ====== Main runner ======
 async def main():
     all_apps = []
     for config in BOTS_CONFIG:
-        bot_app = await run_bot(config)
-        all_apps.append(bot_app)
+        app = await run_bot(config)
+        all_apps.append(app)
 
-    last_bot_app = await run_last_bot()
-    all_apps.append(last_bot_app)
+    last_app = await run_last_bot()
+    all_apps.append(last_app)
 
     async def start_polling(app):
         await app.initialize()
         await app.start()
         await app.updater.start_polling()
-        print("📡 Polling berjalan untuk:", app.bot.username)
+        print("📡 Polling berjalan:", app.bot.username)
 
     await asyncio.gather(*(start_polling(app) for app in all_apps))
-    await asyncio.Event().wait()  # agar tidak langsung exit
+    await asyncio.Event().wait()
 
+# Start semua bot
 if __name__ == "__main__":
     asyncio.run(main())
