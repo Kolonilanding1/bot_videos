@@ -1,15 +1,20 @@
 import os
-import json
-import aiohttp
 import asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import logging
+import threading
+from datetime import datetime
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+import pytz
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
+from telegram.constants import ParseMode
+from telegram.error import BadRequest
 from telegram.ext import (
-    ApplicationBuilder,
+    Application,
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
 )
-
 # ====== KONFIGURASI BOT BERJENJANG (BOT 1-4) ======
 BOTS_CONFIG = [
     {
