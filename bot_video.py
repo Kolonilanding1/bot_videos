@@ -13,28 +13,28 @@ from telegram.ext import (
 # ====== KONFIGURASI BOT BERJENJANG (BOT 1-4) ======
 BOTS_CONFIG = [
     {
-        "token": "7502172892:AAGxZr5cR3unmV92HYu5FXMvuXVFx_xSlBI",
+        "token": os.getenv("BOT1_TOKEN"),
         "name": "@NakalAccess_Bot",
         "next_bot": "@GacorAccess_Bot",
         "group": "@InfoFreebet4D",
         "channels": ["@bola_pelangi", "@studionakal18"]
     },
     {
-        "token": "7867189011:AAFo0MoSs_YIcteplSP13Nw1dM_Fb04WZTU",
+        "token": os.getenv("BOT2_TOKEN"),
         "name": "@GacorAccess_Bot",
         "next_bot": "@KoloniNakal_Bot",
         "group": "@SITUSLINKGACOR4D",
         "channels": ["@bolapelangi2ofc", "@studionakal18"]
     },
     {
-        "token": "8104298639:AAGv8wMQmPwIEQAnC5h09BSUJyCjl14bg3Q",
+        "token": os.getenv("BOT3_TOKEN"),
         "name": "@KoloniNakal_Bot",
         "next_bot": "@SingaNakal_Bot",
         "group": "@GrupStudioNakal18",
         "channels": ["@koloni4d_official1", "@studionakal18"]
     },
     {
-        "token": "7681213875:AAHfdNdjljBinIGNO2WUC2lfSifNJQJAH5A",
+        "token": os.getenv("BOT4_TOKEN"),
         "name": "@SingaNakal_Bot",
         "next_bot": "@VidioLast_Bot",
         "group": "@GrupStudioNakal18",
@@ -42,8 +42,9 @@ BOTS_CONFIG = [
     }
 ]
 
+
 # ====== KONFIGURASI BOT TERAKHIR (BOT 5) ======
-TOKEN_LAST_BOT = "7368142853:AAHNyDF5WMub4gH50v3uuwoGfi5q-3N1Wlo"
+TOKEN_LAST_BOT = os.getenv("LAST_BOT_TOKEN")
 VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada di folder yang sama
 
 def load_videos():
