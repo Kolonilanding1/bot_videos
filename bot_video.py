@@ -103,6 +103,9 @@ async def callback_handler_bot(update: Update, context: ContextTypes.DEFAULT_TYP
 async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     video_id = context.args[0] if context.args else ""
+    
+    print(f"✅ DITERIMA VIDEO ID: {video_id}")  # <--- Tambahkan baris ini untuk debug
+
     videos = load_videos()
     if video_id in videos:
         video = videos[video_id]
@@ -116,7 +119,7 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(
             chat_id=user.id,
-            text="❌ Video tidak ditemukan atau ID tidak valid."
+            text=f"❌ Video tidak ditemukan atau ID tidak valid.\n(ID: {video_id})"
         )
 
 # ====== Fungsi tambahan /list ======
