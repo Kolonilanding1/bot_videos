@@ -54,7 +54,7 @@ TOKEN_LAST_BOT = os.getenv("LAST_BOT_TOKEN")
 VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada
 
 def load_videos():
-    with open(VIDEOS_JSON_PATH, "r") as f:
+    with open(VIDEOS_JSON_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 # ====== Bot 1-4: cek membership dan tombol lanjut ======
@@ -119,6 +119,19 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="❌ Video tidak ditemukan atau ID tidak valid."
         )
 
+# ====== Fungsi tambahan /list ======
+async def list_all_videos(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    videos = load_videos()
+    text = "<b>Daftar Video Tersedia:</b>\n\n"
+    for vid_id, vid in videos.items():
+        text += f"🎬 <b>{vid['title']}</b>\n➡️ /start {vid_id}\n\n"
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=text,
+        parse_mode="HTML"
+    )
+
 # ====== Fungsi logging user ke file ======
 def log_activity(user_id, username, action):
     try:
@@ -163,6 +176,7 @@ async def run_bot(config):
 async def run_last_bot():
     app = ApplicationBuilder().token(TOKEN_LAST_BOT).build()
     app.add_handler(CommandHandler("start", start_last_bot))
+    app.add_handler(CommandHandler("list", list_all_videos))  # Tambahkan fitur /list
     print("✅ Bot terakhir aktif.")
     return app
 
