@@ -214,7 +214,9 @@ async def run_last_bot():
     print("✅ Bot terakhir aktif.")
     return app
 
-# ====== Main runner ======
+async def start_polling(app):
+    await app.run_polling()
+
 async def main():
     all_apps = []
     for config in BOTS_CONFIG:
@@ -224,15 +226,10 @@ async def main():
     last_app = await run_last_bot()
     all_apps.append(last_app)
 
-    async def start_polling(app):
-        await app.initialize()
-        await app.start()
-        await app.updater.start_polling()
-        print("📡 Polling berjalan:", app.bot.username)
-
+    # Jalankan semua bot polling secara bersamaan tanpa konflik
     await asyncio.gather(*(start_polling(app) for app in all_apps))
     await asyncio.Event().wait()
 
-# Start semua bot
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
