@@ -54,10 +54,9 @@ TOKEN_LAST_BOT = os.getenv("LAST_BOT_TOKEN")
 VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada
 
 def load_videos():
-    with open("video.json", "r", encoding="utf-8") as f:
+    with open("videos.json", "r", encoding="utf-8") as f:
         data = json.load(f)
-    print(f"📦 [DEBUG] Loaded video IDs: {list(data.keys())}")
-    return data
+    return {item["id"]: item for item in data}
 
 # ====== Bot 1-4: cek membership dan tombol lanjut ======
 async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, config, video_id="", is_callback=False):
