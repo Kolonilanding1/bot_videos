@@ -54,8 +54,10 @@ TOKEN_LAST_BOT = os.getenv("LAST_BOT_TOKEN")
 VIDEOS_JSON_PATH = "videos.json"  # Pastikan file ada
 
 def load_videos():
-    with open(VIDEOS_JSON_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+    with open("video.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+    print(f"📦 [DEBUG] Loaded video IDs: {list(data.keys())}")
+    return data
 
 # ====== Bot 1-4: cek membership dan tombol lanjut ======
 async def check_membership_and_reply(update: Update, context: ContextTypes.DEFAULT_TYPE, config, video_id="", is_callback=False):
@@ -103,32 +105,62 @@ async def callback_handler_bot(update: Update, context: ContextTypes.DEFAULT_TYP
 async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     video_id = context.args[0] if context.args else ""
-    
-    print(f"✅ DITERIMA VIDEO ID: {video_id}")  # <--- Tambahkan baris ini untuk debug
+
+    print(f"✅ [DEBUG] Diterima video ID: {video_id}")
 
     videos = load_videos()
+
+    # Cek apakah ID valid
     if video_id in videos:
         video = videos[video_id]
+
+        # Cek field penting
+        thumbnail = video.get("thumbnail")
+        title = video.get("title", "Tanpa Judul")
+        url = video.get("url")
+
+        if not (thumbnail and url):
+            await context.bot.send_message(
+                chat_id=user.id,
+                text="⚠️ Data video tidak lengkap. Thumbnail atau URL kosong."
+            )
+            return
+
+        # Kirim konten ke user
         await context.bot.send_photo(
             chat_id=user.id,
-            photo=video["thumbnail"],
-            caption=f"🎬 <b>{video['title']}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
+            photo=thumbnail,
+            caption=f"🎬 <b>{title}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔗 Tonton Sekarang", url=video["url"])]]),
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🔗 Tonton Sekarang", url=url)]]
+            ),
         )
     else:
         await context.bot.send_message(
             chat_id=user.id,
-            text=f"❌ Video tidak ditemukan atau ID tidak valid.\n(ID: {video_id})"
+            text=f"❌ Video tidak ditemukan atau ID tidak valid.\n(ID: <code>{video_id}</code>)",
+            parse_mode="HTML"
         )
+
 
 # ====== Fungsi tambahan /list ======
 async def list_all_videos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     videos = load_videos()
-    text = "<b>Daftar Video Tersedia:</b>\n\n"
+
+    if not videos:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="⚠️ Tidak ada video tersedia saat ini."
+        )
+        return
+
+    text = "<b>📋 Daftar Video Tersedia:</b>\n\n"
     for vid_id, vid in videos.items():
-        text += f"🎬 <b>{vid['title']}</b>\n➡️ /start {vid_id}\n\n"
+        title = vid.get("title", "Tanpa Judul")
+        text += f"🎬 <b>{title}</b>\n➡️ /start {vid_id}\n\n"
+
     await context.bot.send_message(
         chat_id=user_id,
         text=text,
