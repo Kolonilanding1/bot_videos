@@ -133,8 +133,8 @@ async def start_last_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             caption=f"🎬 <b>{title}</b>\n\n🔞 Klik tombol di bawah untuk menonton:",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🔗 Tonton Sekarang", url=url)]]
-            ),
+                [[InlineKeyboardButton("🔗 Tonton Sekarang", url=f"https://t.me/NakalAccess_Bot?start={video_id}")]]
+            )
         )
     else:
         await context.bot.send_message(
